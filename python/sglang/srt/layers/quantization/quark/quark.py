@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import fnmatch
+import functools
 import logging
 import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
@@ -45,6 +46,13 @@ if TYPE_CHECKING:
     from sglang.srt.layers.moe.token_dispatcher import StandardDispatchOutput
 
 __all__ = ["QuarkLinearMethod", "QuarkFusedMoEMethod"]
+
+
+@functools.lru_cache(maxsize=None)
+def _glob_matcher(pattern: str):
+    """fnmatch.fnmatch for one pattern, compiled once. fnmatch's own cache holds 256 patterns, so walking a
+    layer_quant_config of more (GLM-5.3-Flash quark MXFP4 has 924) recompiled every pattern on every lookup."""
+    return re.compile(fnmatch.translate(pattern)).match
 
 
 def _parse_nvfp4_excludes(hf_quant_config: Dict[str, Any]) -> List[str]:
@@ -875,7 +883,7 @@ class QuarkConfig(QuantizationConfig):
                 dict[str, Any], self.quant_config.get("layer_quant_config")
             )
             for name_pattern in layer_quant_config:
-                if fnmatch.fnmatch(layer_name, name_pattern):
+                if _glob_matcher(name_pattern)(layer_name):
                     return layer_quant_config[name_pattern]
 
             # entries may name experts individually, so they resolve the fused module
