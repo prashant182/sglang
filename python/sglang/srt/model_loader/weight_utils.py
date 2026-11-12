@@ -50,6 +50,7 @@ from sglang.srt.layers.quantization.modelopt_quant import (
     ModelOptFp4Config,
     ModelOptFp8Config,
 )
+from sglang.srt.layers.utils.pinned_weight_staging import staged_copy_
 from sglang.srt.model_loader.checkpoint_quantization import (
     resolve_checkpoint_quant_spec,
 )
@@ -1486,7 +1487,7 @@ def default_weight_loader(param: torch.Tensor, loaded_weight: torch.Tensor) -> N
             f"Attempted to load weight ({loaded_weight.size()}) "
             f"into parameter ({param.size()})"
         )
-        param.data.copy_(loaded_weight)
+        staged_copy_(param.data, loaded_weight)
 
 
 LoaderFunction = Callable[[torch.Tensor, torch.Tensor], torch.Tensor]

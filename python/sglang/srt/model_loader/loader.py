@@ -106,6 +106,7 @@ DEFAULT_GPU_MEMORY_FRACTION_FOR_CALIBRATION = (
     0.8  # Reserve 20% GPU memory headroom for ModelOpt calibration
 )
 from sglang.srt.environ import envs
+from sglang.srt.layers.utils.pinned_weight_staging import maybe_stage_weight_copies
 from sglang.srt.model_loader.weight_utils import (
     CheckpointFilePrefetchHandle,
     _prefetch_all_checkpoints,
@@ -1012,7 +1013,8 @@ class DefaultModelLoader(BaseModelLoader):
 
     @staticmethod
     def load_weights_and_postprocess(model, weights, target_device):
-        DefaultModelLoader.load_weights_only(model, weights, target_device)
+        with maybe_stage_weight_copies():
+            DefaultModelLoader.load_weights_only(model, weights, target_device)
         DefaultModelLoader.postprocess_weights(model, target_device)
 
     @staticmethod
